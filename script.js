@@ -2,9 +2,9 @@ function createPlayer() {
     let name = "";
     let symbol = "";
     
-    const setPlayer = () => {
-        name = prompt("What is your name?");
-        symbol = prompt("What is the symbol you want?");
+    const setPlayer = (newName, newSymbol) => {
+        name = newName
+        symbol = newSymbol
     }
 
     const getSymbol = () => symbol
@@ -27,14 +27,15 @@ function createCell() {
 }
 
 function gameController() {
-    const board = [[], [], []]
+    const board = [];
 
-    // Builds board, putting 3 cell objects into the 3 rows
-    board.forEach((row) => {
-        for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i++) {
+        const row = [];
+        for (let j = 0; j < 3; j++) {
             row.push(createCell());
         }
-    });
+        board.push(row);
+    }
 
     const checkSetValue = (row, col, player) => {
         // If Value of Cell is empty set, else don't.
@@ -81,45 +82,104 @@ function gameController() {
     return {checkSetValue, checkWin, printBoard, getBoard}
 }
 
-const game = (function () {
+function restartGame() {
+    document.querySelectorAll(".played").forEach(played => {
+        played.remove();
+    })
+}
+
+function playerModal(startGame) {
+    document.getElementById("dialog").showModal();
+
+    document.querySelectorAll('input[name="symbol1"]').forEach(radio => {
+        radio.addEventListener("change", () => {
+            const player1Symbol = document.querySelector('input[name="symbol1"]:checked').value;
+            const oppositeSymbol = player1Symbol === 'x' ? 'o' : 'x';
+            document.querySelector(`input[name="symbol2"][value="${oppositeSymbol}"]`).checked = true;
+        });
+    });
+
+    document.querySelectorAll('input[name="symbol2"]').forEach(radio => {
+        radio.addEventListener("change", () => {
+            const player2Symbol = document.querySelector('input[name="symbol2"]:checked').value;
+            const oppositeSymbol = player2Symbol === 'x' ? 'o' : 'x';
+            document.querySelector(`input[name="symbol1"][value="${oppositeSymbol}"]`).checked = true;
+        });
+    });
+
+
+    document.querySelector("form").addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const usernamePlayer1 = document.getElementById("username1").value;
+        const player1Symbol = document.querySelector('input[name="symbol1"]:checked').value;
+
+        const usernamePlayer2 = document.getElementById("username2").value;
+        const player2Symbol = document.querySelector('input[name="symbol2"]:checked').value;
+
+        console.log(usernamePlayer1, player1Symbol, usernamePlayer2, player2Symbol);
+
+        document.getElementById("player1").textContent = usernamePlayer1 + " : " + player1Symbol;
+        document.getElementById("player2").textContent = usernamePlayer2 + " : " + player2Symbol;    
+
+        dialog.close();
+
+        startGame({usernamePlayer1, player1Symbol, usernamePlayer2, player2Symbol});
+    });
+}
+
+const startGame = function ({usernamePlayer1, player1Symbol, usernamePlayer2, player2Symbol}) {    
     const board = gameController();
     let round = 0;
 
     const player1 = createPlayer()
     const player2 = createPlayer()
-    player1.setPlayer();
-    player2.setPlayer();
+
+    player1.setPlayer(usernamePlayer1, player1Symbol);
+    player2.setPlayer(usernamePlayer2, player2Symbol);
+
+    console.log(player1.getName(), " Symbol: ", player1.getSymbol());
+    console.log(player2.getName(), " Symbol: ", player2.getSymbol());
+
 
     let playerControl = player1;
 
-    board.printBoard();
+    document.querySelector(".turn").textContent = playerControl.getName();
 
-    while (round < 9) {
-        let choiceRow = prompt(playerControl.getName() + ". What row? \n \nType 'exit' to quit")
-        let choiceCol = prompt(playerControl.getName() + ". What column? \n \nType 'exit' to quit")
+    const stringPlayerControl = playerControl === player1 ? "player1" : "player2";
+    document.getElementById(stringPlayerControl).classList.add("player-selected");
 
-        if (choiceRow == "exit" || choiceCol == "exit") {
-            break;
-        }
-
-        if (board.checkSetValue(choiceRow, choiceCol, playerControl) != false) {
-            board.checkSetValue(choiceRow, choiceCol, playerControl);
-            round++
-
-            if (board.checkWin()) {
-                console.log(`${playerControl.getName()} Wins`);
-                board.printBoard();
-                break;
-            }
-
-            playerControl = (playerControl === player1) ? player2 : player1;
-        }
-        else {
-            console.log("Cell Already Taken");
-        }
-
-        board.printBoard();
-    }
+    document.querySelectorAll(".cell").forEach(cell => {
+        cell.addEventListener("click", () => {
+            const [, choiceRow, choiceCol] = cell.id.split("-");
     
+            if (board.checkSetValue(choiceRow, choiceCol, playerControl) !== false) {
+                board.checkSetValue(choiceRow, choiceCol, playerControl);
+                const img = document.createElement("img")
+                img.setAttribute("src", "imgs/" + playerControl.getSymbol() + ".png")
+                img.classList.add("played");
+                cell.appendChild(img);
+                round++
+    
+                if (board.checkWin()) {
+                    alert(`${playerControl.getName()} Wins`);
+                    restartGame();
+                    playerModal(startGame);
+                    board.printBoard();
+                }
+                else if (round == 9) {
+                    alert("Nobody won")
+                    restartGame();
+                    playerModal(startGame);
+                }
+    
+                playerControl = (playerControl === player1) ? player2 : player1;
+            }
+            else {
+                alert("Cell Already Taken");
+            }
+        });
+    });
+} 
 
-})();
+playerModal(startGame);
