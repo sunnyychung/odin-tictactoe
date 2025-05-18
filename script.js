@@ -1,3 +1,5 @@
+let cellsCreated = false;
+
 function createPlayer() {
     let name = "";
     let symbol = "";
@@ -82,12 +84,6 @@ function gameController() {
     return {checkSetValue, checkWin, printBoard, getBoard}
 }
 
-function restartGame() {
-    document.querySelectorAll(".played").forEach(played => {
-        played.remove();
-    })
-}
-
 function playerModal(startGame) {
     document.getElementById("dialog").showModal();
 
@@ -138,48 +134,52 @@ const startGame = function ({usernamePlayer1, player1Symbol, usernamePlayer2, pl
     player1.setPlayer(usernamePlayer1, player1Symbol);
     player2.setPlayer(usernamePlayer2, player2Symbol);
 
-    console.log(player1.getName(), " Symbol: ", player1.getSymbol());
-    console.log(player2.getName(), " Symbol: ", player2.getSymbol());
-
-
     let playerControl = player1;
 
     document.querySelector(".turn").textContent = playerControl.getName();
 
-    const stringPlayerControl = playerControl === player1 ? "player1" : "player2";
-    document.getElementById(stringPlayerControl).classList.add("player-selected");
+    const boardContainer = document.querySelector(".game");
+    boardContainer.innerHTML = "";
 
-    document.querySelectorAll(".cell").forEach(cell => {
-        cell.addEventListener("click", () => {
-            const [, choiceRow, choiceCol] = cell.id.split("-");
-    
-            if (board.checkSetValue(choiceRow, choiceCol, playerControl) !== false) {
-                board.checkSetValue(choiceRow, choiceCol, playerControl);
-                const img = document.createElement("img")
-                img.setAttribute("src", "imgs/" + playerControl.getSymbol() + ".png")
-                img.classList.add("played");
-                cell.appendChild(img);
-                round++
-    
-                if (board.checkWin()) {
-                    alert(`${playerControl.getName()} Wins`);
-                    restartGame();
-                    playerModal(startGame);
-                    board.printBoard();
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+            cell.id = `cell-${row}-${col}`;
+
+            cell.addEventListener("click", () => {
+                const [, choiceRow, choiceCol] = cell.id.split("-");
+
+                if (board.checkSetValue(choiceRow, choiceCol, playerControl) !== false) {
+                    board.checkSetValue(choiceRow, choiceCol, playerControl);
+                    const img = document.createElement("img")
+                    img.setAttribute("src", "imgs/" + playerControl.getSymbol() + ".png")
+                    img.classList.add("played");
+                    cell.appendChild(img);
+                    round++;
+
+                    if (board.checkWin()) {
+                        alert(`${playerControl.getName()} Wins`);
+                        setTimeout(() => playerModal(startGame), 100);
+                        board.printBoard();
+                        return;
+                    } else if (round === 9) {
+                        alert("Nobody won");
+                        setTimeout(() => playerModal(startGame), 100);
+                        return;
+                    }
+
+                    playerControl = (playerControl === player1) ? player2 : player1;
+                    document.querySelector(".turn").textContent = playerControl.getName();
+                } else {
+                    alert("Cell Already Taken");
                 }
-                else if (round == 9) {
-                    alert("Nobody won")
-                    restartGame();
-                    playerModal(startGame);
-                }
-    
-                playerControl = (playerControl === player1) ? player2 : player1;
-            }
-            else {
-                alert("Cell Already Taken");
-            }
-        });
-    });
-} 
+            });
+
+            boardContainer.appendChild(cell);
+        }
+    }
+};
+
 
 playerModal(startGame);

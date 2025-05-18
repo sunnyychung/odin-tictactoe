@@ -29,10 +29,6 @@ main {
     width: 30vw;
 }
 
-.player-selected {
-    text-decoration: underline;
-}
-
 h2 {
     padding: 5px;
     margin: 0px;
